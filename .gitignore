@@ -1,12 +1,22 @@
 # Dependencies
 node_modules/
+.bun/
 
 # Build output
 dist/
 
+# Local State & Configuration
+.env
+.env.local
+.opencode/
+
+# System Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
 # Logs
 *.log
 npm-debug.log*
-
-# Environment
-.env
+yarn-error.log

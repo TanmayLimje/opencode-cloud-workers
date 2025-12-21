@@ -6,6 +6,8 @@ import { JulesProvider } from "./providers/jules/provider";
 import { createStartTool } from "./tools/start";
 import { createStatusTool } from "./tools/status";
 import { createListTool } from "./tools/list";
+import { createFeedbackTool } from "./tools/feedback";
+import { createMergeTool } from "./tools/merge";
 import { CloudWorkerLoop } from "./core/loop";
 
 const CloudWorkersPlugin: Plugin = async (ctx) => {
@@ -38,6 +40,8 @@ const CloudWorkersPlugin: Plugin = async (ctx) => {
             cloud_worker_start: createStartTool(provider, sessionManager, ctx),
             cloud_worker_status: createStatusTool(provider, sessionManager),
             cloud_worker_list: createListTool(sessionManager),
+            cloud_worker_feedback: createFeedbackTool(provider, sessionManager),
+            cloud_worker_merge: createMergeTool(provider, sessionManager),
         },
 
         // Event hooks (if needed later)

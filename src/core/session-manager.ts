@@ -80,7 +80,7 @@ export class SessionManager {
         return this.state.sessions.filter(
             (s) =>
                 s.watching &&
-                !["completed", "failed", "cancelled"].includes(s.status)
+                !["failed", "cancelled"].includes(s.status) // WE KEEP COMPLETED for Review phase
         );
     }
 }

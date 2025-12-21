@@ -2,8 +2,26 @@
   "name": "@opencode-ai/cloud-workers",
   "version": "0.1.0",
   "description": "Async cloud workers orchestration for OpenCode",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opencode-ai/cloud-workers.git"
+  },
+  "author": "OpenCode Team",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "jules",
+    "cloud-workers",
+    "agent",
+    "ai"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "vitest",
@@ -11,6 +29,7 @@
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.0.162",
+    "octokit": "^5.0.5",
     "uuid": "^13.0.0",
     "zod": "^4.0.0"
   },

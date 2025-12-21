@@ -1,0 +1,91 @@
+import { PluginInput } from "@opencode-ai/plugin";
+import { TrackedSession } from "./interfaces/types";
+
+export interface ReviewResult {
+    approved: boolean;
+    issues: number;
+    feedback: string;
+}
+
+export class Reviewer {
+    constructor(private ctx: PluginInput) { }
+
+    async review(session: TrackedSession, patch: string): Promise<ReviewResult> {
+        const prompt = `
+You are a senior code reviewer. A remote worker has submitted a patch for the following task:
+
+TASK:
+"${session.prompt}"
+
+PATCH:
+\`\`\`diff
+${patch.slice(0, 10000)} ${(patch.length > 10000) ? "\n... (truncated)" : ""}
+\`\`\`
+
+Review this patch for logical errors, security issues, and adherence to the task. 
+IGNORE formatting nitpicks. Focus on correctness.
+
+Return your review as a valid JSON object with this shape:
+{
+  "approved": boolean,
+  "issues": number,
+  "feedback": "string (concise actionable feedback or 'Looks good' if approved)"
+}
+
+Do NOT wrap the JSON in markdown code blocks. Return ONLY the JSON string.
+`;
+
+        try {
+            // We use a temporary session for the review
+            // In the future we should use a stateless completion API if available
+            const result = await this.ctx.client.session.create({
+                body: { title: `Review: ${session.id}` }
+            });
+
+            if (result.error) throw new Error("Failed to create review session");
+            const reviewSessionId = result.data.id;
+
+            const response = await this.ctx.client.session.prompt({
+                path: { id: reviewSessionId },
+                body: {
+                    parts: [{ type: "text", text: prompt }]
+                }
+            });
+
+            // Cleanup (best effort)
+            this.ctx.client.session.delete({ path: { id: reviewSessionId } }).catch(() => { });
+
+            if (response.error || !response.data) throw new Error("Review agent failed to respond");
+
+            // Extract text
+            const text = response.data.parts?.find(p => p.type === "text")?.text || "";
+
+            // Parse JSON
+            try {
+                // loose parsing to handle markdown blocks if model fails to follow instructions
+                const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
+                const parsed = JSON.parse(jsonStr);
+                return {
+                    approved: !!parsed.approved,
+                    issues: parsed.issues || 0,
+                    feedback: parsed.feedback || "No feedback provided."
+                };
+            } catch (e) {
+                console.error("Failed to parse review JSON:", text);
+                return {
+                    approved: false, // Fail safe
+                    issues: 1,
+                    feedback: "Reviewer failed to produce valid JSON. Please check manually."
+                };
+            }
+
+        } catch (e) {
+            console.error("Review failed:", e);
+            return {
+                approved: false,
+                issues: 1,
+                feedback: "Internal error during review process."
+            };
+        }
+    }
+}

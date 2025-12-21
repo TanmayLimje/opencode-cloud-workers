@@ -4,7 +4,7 @@ import fs from "fs/promises";
 
 export const CloudWorkersConfigSchema = z.object({
     default_provider: z.string().default("jules"),
-    providers: z.record(z.object({
+    providers: z.record(z.string(), z.object({
         api_key_env: z.string().optional(),
         base_url: z.string().optional(),
         api_version: z.string().optional(),
