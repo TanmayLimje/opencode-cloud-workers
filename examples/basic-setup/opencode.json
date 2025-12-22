@@ -1,0 +1,12 @@
+{
+    "$schema": "https://opencode.ai/schemas/config.json",
+    "plugins": ["opencode-cloud-workers"],
+    "cloud-workers": {
+        "default_provider": "jules",
+        "providers": {
+            "jules": {
+                "api_key_env": "JULES_API_KEY"
+            }
+        }
+    }
+}

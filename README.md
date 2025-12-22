@@ -1,5 +1,8 @@
 # OpenCode Cloud Workers Plugin ☁️👷
 
+[![CI](https://github.com/ManishModak/opencode-cloud-workers/actions/workflows/ci.yml/badge.svg)](https://github.com/ManishModak/opencode-cloud-workers/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > [!WARNING]
 > **Development Preview**: This project is currently in active development. There are no official releases yet, and APIs may change.
 
@@ -89,6 +92,25 @@ This plugin follows the **"Local Strategy, Remote Execution"** philosophy.
 
 - **Local**: Context, Decision Making, Review, Orchestration.
 - **Remote**: Heavy Compute, Sandboxed Execution, Environment Setup.
+
+## Development
+
+```bash
+bun install
+bun run build
+bun run test
+bun run typecheck
+```
+
+## Roadmap
+
+- Multi-provider support (future)
+- Enhanced review loop
+- Auto-merge with approval gates
+
+## Contributing
+
+We welcome contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to get started.
 
 ## License
 

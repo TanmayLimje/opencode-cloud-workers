@@ -1,18 +1,22 @@
+# AGENTS.md
+
+## Commands
+- Build: `bun run build`
+- Typecheck: `bun run typecheck`
+- Test all: `bun run test`
+- Test single: `bun run test <file-or-pattern>` (e.g., `bun run test session-manager`)
+
+## Code Style
+- **TypeScript**: Strict mode, ES2022 target, ESNext modules. Never use `as any` or `@ts-ignore`.
+- **Formatting**: Double quotes, 4-space indent, no trailing commas in single-line.
+- **Imports**: External packages first, then relative. Group by domain.
+- **Naming**: camelCase for variables/functions, PascalCase for classes/types/interfaces.
+- **Errors**: Create custom Error classes extending Error (see `JulesAPIError`). Never empty catch blocks.
+- **Validation**: Use Zod schemas for runtime validation.
+- **Async**: Use async/await, not raw Promises. Handle errors with try/catch.
+- **Logging**: Prefix with module name in brackets, e.g., `[CloudWorkerLoop]`.
+
 <!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
+## OpenSpec
+See `@/openspec/AGENTS.md` for proposals, specs, and change workflows.
 <!-- OPENSPEC:END -->

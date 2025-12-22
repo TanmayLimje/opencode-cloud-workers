@@ -1,0 +1,26 @@
+{
+    "$schema": "https://opencode.ai/schemas/config.json",
+    "plugins": ["opencode-cloud-workers"],
+    "cloud-workers": {
+        "default_provider": "jules",
+        "providers": {
+            "jules": {
+                "api_key_env": "JULES_API_KEY"
+            }
+        },
+        "polling": {
+            "interval_seconds": 15,
+            "max_duration_minutes": 120
+        },
+        "review": {
+            "enabled": true,
+            "auto_feedback": true,
+            "max_feedback_rounds": 3
+        },
+        "merge": {
+            "auto_merge": true,
+            "require_passing_checks": true,
+            "delete_branch_after_merge": true
+        }
+    }
+}
