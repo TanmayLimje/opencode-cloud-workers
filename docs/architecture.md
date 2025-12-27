@@ -73,42 +73,57 @@ We use a two-tier tracking approach to maintain visibility at both orchestration
 ### Tier 1: Cloud Worker Task Tracking (Our System)
 
 **Purpose:** Track what WE offloaded to cloud workers  
-**Storage:** `.opencode/cloud-workers/tasks.json`  
+**Storage:** `.opencode/cloud-workers/state.json`  
 **Scope:** Orchestration layer
 
 ```json
 {
-  "tasks": [
+  "sessions": [
     {
-      "id": "cw_abc123",
+      "id": "uuid-local-id",
       "provider": "jules",
-      "providerSessionId": "jules_session_xyz",
+      "remoteSessionId": "jules_session_xyz",
       "status": "in_progress",
-      "originalRequest": "Add tests to all services",
-      "constructedPrompt": "...(full prompt)",
+      "prompt": "Add tests to all services",
       "expectedOutcomes": [
-        "Unit tests for UserService",
-        "Unit tests for AuthService",
-        "Coverage >80%"
+        "Tests implemented and passing",
+        "Coverage above 80%",
+        "No breaking changes introduced"
       ],
-      "prUrl": null,
-      "reviewRound": 0,
-      "notificationQueued": false
+      "reviewRound": 1,
+      "reviewHistory": [
+        {
+          "round": 1,
+          "approved": false,
+          "issues": 2,
+          "feedback": "Missing error case tests..."
+        }
+      ]
     }
   ]
 }
 ```
 
+**Key Features:**
+- **expectedOutcomes**: Auto-extracted from prompt using AI (with fallback)
+- **reviewHistory**: Full history of all review rounds with summaries
+
 ### Tier 2: OpenSpec (Jules' System)
 
 **Purpose:** Track what changes JULES made  
-**Storage:** `openspec/` in the PR branch  
+**Storage:** `openspec/changes/` in the PR branch  
 **Scope:** Implementation details
 
-We instruct Jules to use OpenSpec, which gives us:
+We instruct Jules to create OpenSpec, which gives us:
 - Structured view of what Jules changed
 - Easy diffing of intent vs implementation
 - Reusable for review agent analysis
+
+**Prompt instructs Jules to create:**
+```
+openspec/changes/{task-slug}.md
+```
+
 
 ## Component Breakdown
 

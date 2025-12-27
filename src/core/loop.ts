@@ -2,6 +2,7 @@ import { SessionManager } from "./session-manager";
 import { RemoteWorkerProvider } from "./interfaces/provider";
 import { PluginInput } from "@opencode-ai/plugin";
 import { Reviewer } from "./reviewer";
+import type { ReviewHistoryEntry } from "./interfaces/types";
 
 export class CloudWorkerLoop {
     private intervalId?: NodeJS.Timeout;
@@ -113,30 +114,75 @@ export class CloudWorkerLoop {
 
                             console.log(`[CloudWorkerLoop] Review result for ${session.id}: Approved=${review.approved}`);
 
+                            // Build review history entry
+                            const newRound = (session.reviewRound || 0) + 1;
+                            const historyEntry: ReviewHistoryEntry = {
+                                round: newRound,
+                                timestamp: new Date().toISOString(),
+                                approved: review.approved,
+                                issues: review.issues,
+                                feedback: review.feedback,
+                            };
+
+                            // Summarize older entries (keep only last 2 with full feedback)
+                            const existingHistory = session.reviewHistory || [];
+                            const updatedHistory = existingHistory.map((entry, idx) => {
+                                if (idx < existingHistory.length - 1) {
+                                    // Summarize older entries
+                                    return {
+                                        ...entry,
+                                        feedback: "", // Clear full feedback
+                                        summary: entry.summary || `Round ${entry.round}: ${entry.issues} issues`
+                                    };
+                                }
+                                return entry;
+                            });
+                            updatedHistory.push(historyEntry);
+
                             if (review.approved) {
                                 this.sessionManager.updateSession(session.id, {
                                     statusMessage: "Approved",
                                     inFlight: false,
-                                    watching: false // Done! (until merge phase)
+                                    watching: false,
+                                    reviewRound: newRound,
+                                    reviewHistory: updatedHistory,
+                                    lastReviewResult: {
+                                        approved: true,
+                                        issues: review.issues,
+                                        feedback: review.feedback
+                                    }
                                 });
                                 await this.notifyUser("Worker Approved! ✅", "AI Review passed. Ready to merge.", "success");
                             } else {
                                 // Feedback Loop
-                                if (session.reviewRound < (session.maxReviewRounds || 3)) {
+                                if (newRound < (session.maxReviewRounds || 3)) {
                                     await this.provider.sendFeedback(session.remoteSessionId, review.feedback);
 
                                     this.sessionManager.updateSession(session.id, {
-                                        status: "in_progress", // Set back to in_progress locally so we wait for next completion
-                                        reviewRound: (session.reviewRound || 0) + 1,
+                                        status: "in_progress",
+                                        reviewRound: newRound,
+                                        reviewHistory: updatedHistory,
+                                        lastReviewResult: {
+                                            approved: false,
+                                            issues: review.issues,
+                                            feedback: review.feedback
+                                        },
                                         inFlight: false,
-                                        statusMessage: "Feedback sent to worker"
+                                        statusMessage: `Feedback sent (round ${newRound})`
                                     });
 
                                     await this.notifyUser("Worker Feedback Sent ↺", `Review failed (${review.issues} issues). Jules is fixing it...`, "warning");
                                 } else {
                                     this.sessionManager.updateSession(session.id, {
-                                        status: "failed", // Or 'review_failed'
+                                        status: "failed",
                                         statusMessage: "Max review rounds reached",
+                                        reviewRound: newRound,
+                                        reviewHistory: updatedHistory,
+                                        lastReviewResult: {
+                                            approved: false,
+                                            issues: review.issues,
+                                            feedback: review.feedback
+                                        },
                                         inFlight: false,
                                         watching: false
                                     });

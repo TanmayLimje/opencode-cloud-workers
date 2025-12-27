@@ -30,6 +30,7 @@ describe("SessionManager", () => {
         autoReview: true,
         reviewRound: 0,
         maxReviewRounds: 3,
+        reviewHistory: [],
         autoMerge: false,
         merged: false,
         watching: true,

@@ -10,6 +10,10 @@ import { mapJulesStatus } from "./state-machine";
 
 export interface JulesProviderConfig {
     apiKey: string;
+    /** Base URL for Jules API (default: https://jules.googleapis.com) */
+    baseUrl?: string;
+    /** API version (default: v1alpha) */
+    apiVersion?: string;
 }
 
 export class JulesProvider implements RemoteWorkerProvider {
@@ -20,8 +24,8 @@ export class JulesProvider implements RemoteWorkerProvider {
     constructor(config: JulesProviderConfig) {
         this.client = new JulesClient({
             apiKey: config.apiKey,
-            baseUrl: "https://jules.googleapis.com",
-            apiVersion: "v1alpha",
+            baseUrl: config.baseUrl || "https://jules.googleapis.com",
+            apiVersion: config.apiVersion || "v1alpha",
         });
     }
 

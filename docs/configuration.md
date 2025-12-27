@@ -1,104 +1,168 @@
 # Configuration Guide
 
-The OpenCode Cloud Workers plugin is highly configurable to suit different workflows and providers.
+The OpenCode Cloud Workers plugin uses a **hybrid configuration system** that supports both global and project-level settings.
 
-## Configuration File
+## Configuration Locations
 
-Settings are stored in the `cloud_workers` section of your `opencode.json` or `.opencode/cloud-workers.json`.
+| Location | Purpose | Priority |
+|----------|---------|----------|
+| `~/.config/opencode/cloud-workers.json` | Global credentials & defaults | Base |
+| `opencode.json` → `cloud_workers` section | Project-specific overrides | Highest |
+| Environment variables | Fallback for API keys | Lowest |
 
-## Full Config Schema
+> **Note:** You can use ONLY the global config without any project config. Project config is optional.
 
-The configuration follows this schema:
+## Quick Start
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `default_provider` | `string` | `"jules"` | The provider to use when none is specified. |
-| `providers` | `object` | `{}` | A map of provider-specific configurations. |
-| `poll_interval_ms` | `number` | `60000` | How often to poll the remote session status (in ms). Min: 10000, Max: 300000. |
-| `max_wait_ms` | `number` | `21600000` | Maximum time to wait for a session to complete (default 6 hours). |
-| `auto_review` | `boolean` | `true` | Whether to automatically trigger a local AI review when a session completes. |
-| `reviewer_agent` | `string` | `"oracle"` | The local agent to use for performing code reviews. |
-| `max_review_rounds`| `number` | `2` | Maximum number of automated feedback rounds before requiring human intervention. |
-| `auto_approve_plan`| `boolean` | `false` | Whether to automatically approve the worker's execution plan (if the provider requires it). |
-| `notify_on_complete` | `boolean` | `true` | Whether to inject a notification when a task completes. |
-| `auto_trigger_review` | `boolean` | `true` | Whether to auto-start review when task completes (if session is open). |
-| `instruct_openspec` | `boolean` | `true` | Whether to instruct the cloud worker to use OpenSpec for change tracking. |
-| `merge_method` | `string` | `"squash"` | Method to use for merging (`merge`, `squash`, or `rebase`). |
+### 1. Create Global Config
 
-### Provider Settings
-
-Each provider in the `providers` object can have the following options:
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `api_key_env` | `string` | `"JULES_API_KEY"`| The name of the environment variable containing the API key. |
-| `base_url` | `string` | Provider Default | The base URL for the provider's API. |
-| `api_version` | `string` | Provider Default | The API version to use. |
-
-## Environment Variables
-
-The plugin relies on environment variables for sensitive credentials:
-
-- `JULES_API_KEY`: Required for the Jules provider.
-- `GITHUB_TOKEN`: Required for merge automation and certain GitHub-specific provider features.
-
-## Example Configurations
-
-### Default (Jules with Auto-Review)
+Create `~/.config/opencode/cloud-workers.json`:
 
 ```json
 {
-  "cloud_workers": {
-    "default_provider": "jules",
-    "providers": {
-      "jules": {
-        "api_key_env": "JULES_API_KEY"
-      }
+  "providers": {
+    "jules": {
+      "api_key": "${JULES_API_KEY}"
     },
-    "auto_review": true
-  }
-}
-```
-
-### High-Automation Workflow
-
-Automatically approves plans and triggers reviews with extended feedback rounds.
-
-```json
-{
-  "cloud_workers": {
-    "auto_approve_plan": true,
+    "github": {
+      "token": "${GITHUB_TOKEN}"
+    }
+  },
+  "defaults": {
     "auto_review": true,
-    "auto_trigger_review": true,
     "max_review_rounds": 3,
-    "instruct_openspec": true,
-    "merge_method": "squash"
+    "polling_interval_ms": 30000
   }
 }
 ```
 
-### Manual Control Workflow
+The `${VAR_NAME}` syntax allows referencing environment variables.
 
-Disables auto-review for maximum human oversight. Human must trigger review manually.
+### 2. (Optional) Project Overrides
+
+Add to your project's `opencode.json`:
 
 ```json
 {
   "cloud_workers": {
     "auto_review": false,
-    "auto_trigger_review": false,
-    "notify_on_complete": true
+    "polling_interval_ms": 60000
   }
 }
 ```
 
-### Slow Polling (Resource Conservation)
+## Configuration Schema
 
-For long-running tasks where you don't need frequent updates.
+### Global Config (`cloud-workers.json`)
+
+```typescript
+{
+  "providers": {
+    "jules": {
+      "api_key": string,      // API key or ${ENV_VAR}
+      "base_url": string,     // Optional: custom API URL
+      "api_version": string   // Optional: API version
+    },
+    "github": {
+      "token": string         // GitHub token for merge
+    }
+  },
+  "defaults": {
+    "default_provider": string,     // Default: "jules"
+    "auto_review": boolean,         // Default: true
+    "max_review_rounds": number,    // Default: 3
+    "polling_interval_ms": number   // Default: 30000
+  }
+}
+```
+
+### Project Config (`opencode.json` → `cloud_workers`)
+
+```typescript
+{
+  "cloud_workers": {
+    "default_provider": string,     // Override provider
+    "auto_review": boolean,         // Override auto-review
+    "max_review_rounds": number,    // Override review rounds
+    "polling_interval_ms": number   // Override polling
+  }
+}
+```
+
+## Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `default_provider` | `string` | `"jules"` | Provider to use |
+| `auto_review` | `boolean` | `true` | Auto-review completed work |
+| `max_review_rounds` | `number` | `3` | Max review iterations |
+| `polling_interval_ms` | `number` | `30000` | Status poll interval (ms) |
+
+### Provider: Jules
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `api_key` | - | Jules API key (required) |
+| `base_url` | `https://jules.googleapis.com` | API base URL |
+| `api_version` | `v1alpha` | API version |
+
+### Provider: Github
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `token` | - | GitHub token for PR merge |
+
+## Environment Variables
+
+These are used as fallback if not set in config:
+
+- `JULES_API_KEY` - Jules API key
+- `GITHUB_TOKEN` - GitHub token for merge automation
+
+## Examples
+
+### Minimal (Env Vars Only)
+
+Set environment variables and you're done:
+
+```bash
+export JULES_API_KEY="your-key"
+export GITHUB_TOKEN="ghp_xxx"
+```
+
+### Global Config with Env Interpolation
+
+```json
+{
+  "providers": {
+    "jules": { "api_key": "${JULES_API_KEY}" },
+    "github": { "token": "${GITHUB_TOKEN}" }
+  }
+}
+```
+
+### Disable Auto-Review for a Project
+
+In project's `opencode.json`:
 
 ```json
 {
   "cloud_workers": {
-    "poll_interval_ms": 300000
+    "auto_review": false
+  }
+}
+```
+
+### Custom Jules API Endpoint
+
+```json
+{
+  "providers": {
+    "jules": {
+      "api_key": "${JULES_API_KEY}",
+      "base_url": "https://custom.jules.com",
+      "api_version": "v1beta"
+    }
   }
 }
 ```

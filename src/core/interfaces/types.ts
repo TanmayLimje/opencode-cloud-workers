@@ -69,7 +69,13 @@ export interface TrackedSession {
     /** Max review rounds before stopping */
     maxReviewRounds: number;
 
-    /** Last review result */
+    /** Expected outcomes for structured review verification */
+    expectedOutcomes?: string[];
+
+    /** Full review history (latest is most detailed) */
+    reviewHistory: ReviewHistoryEntry[];
+
+    /** Last review result (quick access to latest) */
     lastReviewResult?: {
         approved: boolean;
         issues: number;
@@ -130,4 +136,34 @@ export interface CloudWorkersState {
 
     /** Last poll timestamp */
     lastPollAt?: string;
+}
+
+/**
+ * Record of a single review round.
+ * Latest entry has full feedback, older entries have brief summary.
+ */
+export interface ReviewHistoryEntry {
+    /** Review round number (1-indexed) */
+    round: number;
+
+    /** When this review occurred */
+    timestamp: string;
+
+    /** Whether the review passed */
+    approved: boolean;
+
+    /** Number of issues found */
+    issues: number;
+
+    /** Full feedback (for latest review) */
+    feedback: string;
+
+    /** Brief summary (for older reviews, to keep payload small) */
+    summary?: string;
+
+    /** Which outcomes were satisfied (if tracked) */
+    outcomeResults?: {
+        outcome: string;
+        satisfied: boolean;
+    }[];
 }

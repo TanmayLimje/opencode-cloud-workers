@@ -90,25 +90,26 @@ CONSTRUCTED JULES PROMPT:
 
 ### Task Tracking (Tier 1)
 
-The task is saved to `.opencode/cloud-workers/tasks.json`:
+The task is saved to `.opencode/cloud-workers/state.json`:
 
 ```json
 {
-  "id": "cw_abc123",
+  "id": "uuid-local-id",
   "provider": "jules",
-  "providerSessionId": "jules_session_xyz",
+  "remoteSessionId": "jules_session_xyz",
   "status": "queued",
-  "originalRequest": "Add tests to all service files",
-  "constructedPrompt": "...(full prompt)",
+  "prompt": "Add tests to all service files",
   "expectedOutcomes": [
-    "Unit tests for UserService",
-    "Unit tests for AuthService",
-    "Coverage >80%"
+    "Tests implemented and passing",
+    "Coverage above 80%",
+    "No breaking changes introduced"
   ],
   "reviewRound": 0,
-  "notificationQueued": false
+  "reviewHistory": []
 }
 ```
+
+**Note:** `expectedOutcomes` are auto-extracted from the prompt using AI.
 
 ### User Notification
 
@@ -225,7 +226,7 @@ Local AI reviews the PR against expected outcomes.
 
 ### Review History
 
-Each review is recorded:
+Each review is recorded in `reviewHistory`:
 
 ```json
 {
@@ -234,12 +235,15 @@ Each review is recorded:
       "round": 1,
       "timestamp": "2025-12-23T12:00:00Z",
       "approved": false,
-      "issueCount": 3,
-      "feedback": "Missing tests for error cases in AuthService..."
+      "issues": 3,
+      "feedback": "Missing tests for error cases in AuthService...",
+      "summary": "Round 1: 3 issues"
     }
   ]
 }
 ```
+
+**Note:** Older entries are summarized to keep payload small. Latest entry has full feedback.
 
 ---
 

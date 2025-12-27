@@ -47,30 +47,52 @@ npm install @opencode-ai/cloud-workers
 
 ## Configuration
 
-Add the plugin to your `opencode.json` configuration:
+The plugin uses a **hybrid config system**:
+
+1. **Global config** (`~/.config/opencode/cloud-workers.json`) - Credentials & defaults
+2. **Project config** (`opencode.json` → `cloud_workers`) - Optional overrides
+3. **Environment variables** - Fallback for API keys
+
+### Quick Setup
+
+**Option A**: Environment variables only (simplest)
+
+```bash
+export JULES_API_KEY="your-jules-api-key"
+export GITHUB_TOKEN="ghp_..."  # Optional, for merge
+```
+
+**Option B**: Global config file
+
+Create `~/.config/opencode/cloud-workers.json`:
 
 ```json
 {
-  "plugins": [
-    "@opencode-ai/cloud-workers"
-  ],
-  "cloud_workers": {
-    "default_provider": "jules",
-    "providers": {
-      "jules": {
-        "api_key_env": "JULES_API_KEY"
-      }
-    }
+  "providers": {
+    "jules": { "api_key": "${JULES_API_KEY}" },
+    "github": { "token": "${GITHUB_TOKEN}" }
+  },
+  "defaults": {
+    "auto_review": true,
+    "max_review_rounds": 3
   }
 }
 ```
 
-### Environment Variables
+**Option C**: Project-specific overrides
 
-You must set the following environment variables in your `.env` or shell:
+Add to `opencode.json`:
 
-- `JULES_API_KEY`: Your Google Jules API Key.
-- `GITHUB_TOKEN`: (Optional) Required for merge automation features.
+```json
+{
+  "plugins": ["@opencode-ai/cloud-workers"],
+  "cloud_workers": {
+    "auto_review": false
+  }
+}
+```
+
+See [docs/configuration.md](docs/configuration.md) for full options.
 
 ## Usage
 
