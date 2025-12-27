@@ -3,6 +3,7 @@ import { RemoteWorkerProvider } from "./interfaces/provider";
 import { PluginInput } from "@opencode-ai/plugin";
 import { Reviewer } from "./reviewer";
 import type { ReviewHistoryEntry } from "./interfaces/types";
+import { fetchOpenSpecFromPR, parsePrUrl } from "./openspec-parser";
 
 export class CloudWorkerLoop {
     private intervalId?: NodeJS.Timeout;
@@ -94,23 +95,33 @@ export class CloudWorkerLoop {
 
                         try {
                             // Fetch Patch
-                            // The provider needs to implement getArtifacts or similar.
-                            // For now we assume the provider has a way to get the diff.
-                            // If Jules API doesn't support direct diff download easily here, 
-                            // we might need to rely on the PR link or 'activities'.
-                            // Let's assume getSession returns some diff info or we add a method.
-
-                            // HACK: For MVP, we'll try to get the patch via a hypothetical method or just simulate
-                            // Since I haven't implemented getArtifacts in JulesProvider yet, I will do it next.
-                            // Use a placeholder for now to unblock loop logic.
                             const artifacts = await this.provider.getArtifacts(session.remoteSessionId);
 
                             if (!artifacts.patch?.content) {
                                 throw new Error("No patch content found to review");
                             }
 
-                            // Perform Review
-                            const review = await this.reviewer.review(session, artifacts.patch.content);
+                            // Try to fetch OpenSpec from PR (if prUrl exists)
+                            let openspec = null;
+                            if (session.prUrl) {
+                                const prInfo = parsePrUrl(session.prUrl);
+                                const githubToken = process.env.GITHUB_TOKEN;
+                                if (prInfo && githubToken) {
+                                    console.log(`[CloudWorkerLoop] Fetching OpenSpec from PR #${prInfo.number}...`);
+                                    openspec = await fetchOpenSpecFromPR(
+                                        githubToken,
+                                        prInfo.owner,
+                                        prInfo.repo,
+                                        prInfo.number
+                                    );
+                                    if (openspec) {
+                                        console.log(`[CloudWorkerLoop] Found OpenSpec: ${openspec.title}`);
+                                    }
+                                }
+                            }
+
+                            // Perform Review (with optional OpenSpec)
+                            const review = await this.reviewer.review(session, artifacts.patch.content, openspec);
 
                             console.log(`[CloudWorkerLoop] Review result for ${session.id}: Approved=${review.approved}`);
 
@@ -190,14 +201,28 @@ export class CloudWorkerLoop {
                                 }
                             }
 
-                        } catch (e) {
+                        } catch (e: any) {
                             console.error("Review loop failed", e);
-                            this.sessionManager.updateSession(session.id, { inFlight: false });
+                            this.sessionManager.updateSession(session.id, {
+                                inFlight: false,
+                                error: {
+                                    code: "REVIEW_ERROR",
+                                    message: e?.message || "Review process failed",
+                                    timestamp: new Date().toISOString()
+                                }
+                            });
                         }
                     }
 
-                } catch (error) {
+                } catch (error: any) {
                     console.error(`[CloudWorkerLoop] Failed to poll session ${session.id}:`, error);
+                    this.sessionManager.updateSession(session.id, {
+                        error: {
+                            code: "POLL_ERROR",
+                            message: error?.message || "Polling failed",
+                            timestamp: new Date().toISOString()
+                        }
+                    });
                 }
             }
         } catch (error) {

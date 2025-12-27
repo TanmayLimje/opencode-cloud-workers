@@ -1,5 +1,6 @@
 import { PluginInput } from "@opencode-ai/plugin";
 import { TrackedSession } from "./interfaces/types";
+import type { OpenSpecChange } from "./openspec-parser";
 
 export interface ReviewResult {
     approved: boolean;
@@ -10,7 +11,11 @@ export interface ReviewResult {
 export class Reviewer {
     constructor(private ctx: PluginInput) { }
 
-    async review(session: TrackedSession, patch: string): Promise<ReviewResult> {
+    async review(
+        session: TrackedSession,
+        patch: string,
+        openspec?: OpenSpecChange | null
+    ): Promise<ReviewResult> {
         // Build outcomes section if available
         const outcomesSection = session.expectedOutcomes && session.expectedOutcomes.length > 0
             ? `
@@ -32,12 +37,25 @@ Check if these issues have been addressed.
 `
             : "";
 
+        // Include OpenSpec if available
+        const openspecSection = openspec
+            ? `
+WORKER'S CHANGE DOCUMENT (OpenSpec):
+Title: ${openspec.title}
+Status: ${openspec.status}
+Files: ${openspec.files.length > 0 ? openspec.files.join(", ") : "Not listed"}
+Description: ${openspec.description || "Not provided"}
+
+Compare the patch against this change document.
+`
+            : "";
+
         const prompt = `
 You are a senior code reviewer. A remote worker has submitted a patch for the following task:
 
 TASK:
 "${session.prompt}"
-${outcomesSection}${previousContext}
+${outcomesSection}${openspecSection}${previousContext}
 PATCH:
 \`\`\`diff
 ${patch.slice(0, 10000)} ${(patch.length > 10000) ? "\n... (truncated)" : ""}
@@ -48,6 +66,7 @@ Review this patch for:
 2. Security issues
 3. Adherence to the task requirements
 ${session.expectedOutcomes ? "4. Whether each expected outcome is satisfied" : ""}
+${openspec ? "5. Consistency with the worker's change document" : ""}
 
 IGNORE formatting nitpicks. Focus on correctness.
 

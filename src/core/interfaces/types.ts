@@ -56,6 +56,13 @@ export interface TrackedSession {
     /** Status message */
     statusMessage?: string;
 
+    /** Structured error information */
+    error?: {
+        code: string;
+        message: string;
+        timestamp: string;
+    };
+
     // ─────────────────────────────────────────────────────────────────────────
     // REVIEW STATE
     // ─────────────────────────────────────────────────────────────────────────
